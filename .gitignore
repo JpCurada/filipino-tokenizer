@@ -220,3 +220,7 @@ __marimo__/
 filipino_tokenizer/data/eval/train_corpus.txt
 filipino_tokenizer/data/eval/test_corpus.txt
 filipino_tokenizer/data/eval/eval_corpus.txt
+
+CLAUDE.md
+.claude/
+_wip/
