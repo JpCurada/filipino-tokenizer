@@ -3,6 +3,39 @@ Quick Start
 
 This page gets you from zero to a working tokenizer in under two minutes.
 
+0. Use the bundled pretrained model (no setup required)
+--------------------------------------------------------
+
+A 32k-vocabulary model trained on Wikitext-TL-39 is shipped with the package.
+After ``pip install filipino-tokenizer`` you can use it immediately:
+
+.. code-block:: python
+
+   from filipino_tokenizer.tagalog import TagalogTokenizer
+
+   tok = TagalogTokenizer()
+   tok.load_pretrained()
+
+   ids = tok.encode("Kumain siya ng pagkain.")
+   print(tok.decode(ids))   # kumain siya ng pagkain.
+
+For HuggingFace Trainer / datasets, also install ``transformers``:
+
+.. code-block:: bash
+
+   pip install filipino-tokenizer[hf]
+
+.. code-block:: python
+
+   from filipino_tokenizer.tagalog import TagalogHFTokenizer
+
+   tok = TagalogHFTokenizer()   # loads bundled model
+   encoding = tok("Kumain siya ng pagkain.", return_tensors="pt")
+
+----
+
+If you want to train your own model on a custom corpus, follow the steps below.
+
 1. Prepare a corpus
 -------------------
 
@@ -90,10 +123,11 @@ interface for use with ``Trainer``, TRL, Axolotl, and any other HF pipeline.
 
    from filipino_tokenizer.tagalog import TagalogHFTokenizer
 
-   tok = TagalogHFTokenizer(
-       vocab_file="my_tokenizer/vocab.json",
-       merges_file="my_tokenizer/merges.txt",
-   )
+   # Option A: bundled pretrained model (no path needed)
+   tok = TagalogHFTokenizer()
+
+   # Option B: load from a directory you trained yourself
+   tok = TagalogHFTokenizer.from_pretrained("my_tokenizer/")
 
    # Standard HuggingFace call
    encoding = tok("Kumain siya ng pagkain.", return_tensors="pt")

@@ -60,8 +60,8 @@ class TagalogHFTokenizer(PreTrainedTokenizer):
 
     def __init__(
         self,
-        vocab_file: str,
-        merges_file: str,
+        vocab_file: str | None = None,
+        merges_file: str | None = None,
         bos_token: str = "<s>",
         eos_token: str = "</s>",
         unk_token: str = "<unk>",
@@ -76,9 +76,13 @@ class TagalogHFTokenizer(PreTrainedTokenizer):
             )
 
         self._inner = TagalogTokenizer()
-        # MorphAwareBPE.load() expects a directory; derive it from vocab_file
-        model_dir = os.path.dirname(os.path.abspath(vocab_file))
-        self._inner.bpe.load(model_dir)
+        if vocab_file is None:
+            # Load the pretrained model bundled with the package
+            self._inner.load_pretrained()
+        else:
+            # MorphAwareBPE.load() expects a directory; derive it from vocab_file
+            model_dir = os.path.dirname(os.path.abspath(vocab_file))
+            self._inner.bpe.load(model_dir)
 
         super().__init__(
             bos_token=bos_token,

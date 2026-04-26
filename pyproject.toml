@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "filipino-tokenizer"
-version = "0.2.0"
+version = "0.3.0"
 description = "Morphology-aware BPE tokenizer for Philippine languages (Tagalog)"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -36,4 +36,4 @@ Issues = "https://github.com/JpCurada/filipino-tokenizer/issues"
 include = ["filipino_tokenizer*"]
 
 [tool.setuptools.package-data]
-"filipino_tokenizer" = ["data/*.json"]
+"filipino_tokenizer" = ["data/*.json", "data/pretrained/*.json", "data/pretrained/*.txt"]
