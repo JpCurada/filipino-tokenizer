@@ -69,6 +69,14 @@ Attributes
    * - ``unk_token`` / ``unk_token_id``
      - ``"<unk>"`` / ``1``
 
+Compatibility note
+------------------
+
+``TagalogHFTokenizer`` now validates special-token mappings on load. If a
+custom or older tokenizer directory is missing one or more expected special
+token strings, it falls back to safe in-vocabulary IDs so batched padding and
+truncation remain stable in HuggingFace training/evaluation pipelines.
+
 ----
 
 Examples

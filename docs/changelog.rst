@@ -1,6 +1,21 @@
 Changelog
 =========
 
+0.3.2 (2026-04-27)
+-------------------
+
+Fixed
+~~~~~
+
+- **HuggingFace batch padding crash** — ``TagalogHFTokenizer`` now ensures
+  special tokens resolve to valid IDs even for custom/older vocabularies.
+  This prevents ``None`` from leaking into padded batches and fixes:
+
+  ``ValueError: type of None unknown: <class 'NoneType'>``
+
+- **Defensive ID conversion** — ``_convert_token_to_id()`` now handles
+  ``None`` safely and always falls back to a valid unknown-token ID.
+
 0.3.0 (2026-04-26)
 -------------------
 

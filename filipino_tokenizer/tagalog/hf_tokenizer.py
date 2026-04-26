@@ -57,6 +57,9 @@ class TagalogHFTokenizer(PreTrainedTokenizer):
         "vocab_file": "vocab.json",
         "merges_file": "merges.txt",
     }
+    # GPT-style models don't need token_type_ids; keeping model inputs minimal
+    # avoids accidental None token-type fields during padding.
+    model_input_names = ["input_ids", "attention_mask"]
 
     def __init__(
         self,
@@ -84,6 +87,21 @@ class TagalogHFTokenizer(PreTrainedTokenizer):
             model_dir = os.path.dirname(os.path.abspath(vocab_file))
             self._inner.bpe.load(model_dir)
 
+        vocab = self._inner.bpe.vocab
+        fallback_unk = "<unk>" if "<unk>" in vocab else next(iter(vocab))
+        fallback_pad = "<pad>" if "<pad>" in vocab else fallback_unk
+
+        # Ensure special tokens always resolve to real IDs. Older/custom saved
+        # vocabs may not include all expected special strings.
+        if unk_token not in vocab:
+            unk_token = fallback_unk
+        if pad_token not in vocab:
+            pad_token = fallback_pad
+        if bos_token not in vocab:
+            bos_token = None
+        if eos_token not in vocab:
+            eos_token = None
+
         super().__init__(
             bos_token=bos_token,
             eos_token=eos_token,
@@ -109,9 +127,10 @@ class TagalogHFTokenizer(PreTrainedTokenizer):
         return self._inner.tokenize(text)
 
     def _convert_token_to_id(self, token: str) -> int:
-        return self._inner.bpe.vocab.get(
-            token, self._inner.bpe.vocab.get(self.unk_token, 1)
-        )
+        unk_id = self._inner.bpe.vocab.get(self.unk_token, 1)
+        if token is None:
+            return unk_id
+        return self._inner.bpe.vocab.get(str(token), unk_id)
 
     def _convert_id_to_token(self, index: int) -> str:
         return self._inner.bpe.id_to_token.get(index, self.unk_token)

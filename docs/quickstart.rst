@@ -32,6 +32,18 @@ For HuggingFace Trainer / datasets, also install ``transformers``:
    tok = TagalogHFTokenizer()   # loads bundled model
    encoding = tok("Kumain siya ng pagkain.", return_tensors="pt")
 
+For batched dataset tokenization with dynamic or max-length padding:
+
+.. code-block:: python
+
+   enc = tok(
+       ["Kumain siya ng pagkain.", "Nagluluto ang nanay."],
+       truncation=True,
+       max_length=128,
+       padding="max_length",
+       return_tensors=None,   # or "pt" / "np"
+   )
+
 ----
 
 If you want to train your own model on a custom corpus, follow the steps below.
