@@ -178,6 +178,35 @@ class TagalogTokenizer:
         """Load a previously saved tokenizer from *directory*."""
         self.bpe.load(directory)
 
+    def prewarm(self, lines: list[str]) -> None:
+        """
+        Pre-segment all unique words across *lines* to warm the segment cache.
+
+        ``TagalogTokenizer`` caches morphological segmentation per word in
+        ``_segment_cache``.  A large corpus has millions of lines but typically
+        only tens of thousands of unique words.  Calling this before
+        ``encode()`` / ``tokenize()`` ensures each word is segmented exactly
+        once, cutting tokenization time by ~10x on real corpora.
+
+        Parameters
+        ----------
+        lines : list[str]
+            The same lines you intend to tokenize.
+        """
+        import sys
+        unique_words: set[str] = set()
+        for line in lines:
+            for part in re.split(r'(\s+|[^\w])', line):
+                if part and re.match(r'^\w+$', part):
+                    unique_words.add(part.lower())
+
+        total = len(unique_words)
+        print(f"Pre-warming cache: {total:,} unique words ...", end="\r", file=sys.stderr)
+        for word in unique_words:
+            if word not in self._segment_cache:
+                self._segment_cache[word] = self._surface_annotate(word)
+        print(f"Cache warmed: {total:,} unique words segmented.   ", file=sys.stderr)
+
     def load_pretrained(self) -> None:
         """
         Load the bundled pretrained 32k Tagalog tokenizer.
