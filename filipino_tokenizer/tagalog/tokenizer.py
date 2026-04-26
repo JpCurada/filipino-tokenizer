@@ -63,15 +63,25 @@ class TagalogTokenizer:
         vocab_size : int
             Target BPE vocabulary size.
         """
+        import sys
+
+        # Count non-empty lines for progress reporting
+        print("Counting lines ...", end="\r", file=sys.stderr, flush=True)
+        with open(corpus_path, "r", encoding="utf-8") as f:
+            total_lines = sum(1 for ln in f if ln.strip())
+
         annotated_tokens: list[str] = []
         cache: dict[str, str] = {}
+        report_every = max(1, total_lines // 20)  # report every ~5%
+        processed = 0
 
+        print(f"Segmenting {total_lines:,} lines ...          ", file=sys.stderr)
         with open(corpus_path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line:
                     continue
-                
+
                 parts = re.split(r'(\s+|[^\w])', line)
                 for part in parts:
                     if not part:
@@ -84,6 +94,21 @@ class TagalogTokenizer:
                     else:
                         annotated_tokens.append(part)
 
+                processed += 1
+                if processed % report_every == 0:
+                    pct = processed / total_lines * 100
+                    print(
+                        f"  {pct:5.1f}%  {processed:,}/{total_lines:,} lines"
+                        f"  {len(cache):,} unique words",
+                        end="\r", file=sys.stderr, flush=True,
+                    )
+
+        print(
+            f"  100.0%  {total_lines:,}/{total_lines:,} lines"
+            f"  {len(cache):,} unique words          ",
+            file=sys.stderr,
+        )
+        print(f"Training BPE (vocab_size={vocab_size:,}) ...", file=sys.stderr)
         self.bpe.train(annotated_tokens, vocab_size=vocab_size)
 
     # ================================================================== #

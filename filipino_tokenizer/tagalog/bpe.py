@@ -122,8 +122,10 @@ class MorphAwareBPE:
         heapq.heapify(heap)
 
         # 3. Iteratively merge
+        import sys
         num_merges = vocab_size - len(self.vocab)
-        for _ in range(num_merges):
+        report_every = max(1, num_merges // 20)  # report every ~5%
+        for merge_i in range(num_merges):
             best_pair = None
             while heap:
                 neg_count, pair = heapq.heappop(heap)
@@ -131,9 +133,22 @@ class MorphAwareBPE:
                 if pair_counts.get(pair, 0) == count:
                     best_pair = pair
                     break
-            
+
             if not best_pair:
+                print(
+                    f"  100.0%  {merge_i:,}/{num_merges:,} merges (no more pairs)          ",
+                    file=sys.stderr,
+                )
                 break
+
+            if (merge_i + 1) % report_every == 0 or merge_i == num_merges - 1:
+                pct = (merge_i + 1) / num_merges * 100
+                print(
+                    f"  {pct:5.1f}%  {merge_i + 1:,}/{num_merges:,} merges",
+                    end="\r", file=sys.stderr, flush=True,
+                )
+            if merge_i == num_merges - 1:
+                print(file=sys.stderr)  # newline after final update
                 
             a, b = best_pair
             merged_token = a + b
