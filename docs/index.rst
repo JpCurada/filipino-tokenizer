@@ -50,4 +50,5 @@ even though the surface forms look very different.
    :maxdepth: 1
    :caption: Project
 
+   contributing
    changelog

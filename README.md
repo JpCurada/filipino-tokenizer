@@ -174,6 +174,8 @@ The architecture is designed to support multiple Philippine languages from the s
 
 - **Miranda, L. J. (2023).** [calamanCy: A Tagalog Natural Language Processing Toolkit](https://aclanthology.org/2023.nlposs-1.1/). *Proceedings of the 3rd Workshop for Natural Language Processing Open Source Software (NLP-OSS)*. SpaCy-based NLP pipeline for Tagalog that informed the morphological analysis approach.
 
+- **Affix and root data** compiled from [Wiktionary's Philippine language entries](https://en.wiktionary.org/wiki/Category:Tagalog_lemmas).
+
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
