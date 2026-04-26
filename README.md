@@ -168,13 +168,11 @@ The architecture is designed to support multiple Philippine languages from the s
 
 ## References
 
-- **Tacorda, Livelo, Ong, and Cheng (2024).** Constraining Byte Pair Encoding (CBPE) to improve morphological segmentation for Filipino tokenizers. The core idea behind the boundary-constrained BPE approach used here.
+- **Tacorda, A. J., Ignacio, M. J., Oco, N., & Roxas, R. E. (2017).** [Controlling byte pair encoding for neural machine translation](https://doi.org/10.1109/IALP.2017.8300571). *2017 International Conference on Asian Language Processing (IALP)*, 168-171. The core idea behind the boundary-constrained (Controlled) BPE approach used here.
 
-- **Cruz, J.P. and Cheng, C. (2022).** Improving Large-scale Language Models and Resources for Filipino. Authors of key Filipino NLP datasets and benchmarks.
+- **Cruz, J. C. B., & Cheng, C. (2022).** [Improving Large-scale Language Models and Resources for Filipino](https://aclanthology.org/2022.lrec-1.703/). *Proceedings of the Thirteenth Language Resources and Evaluation Conference (LREC)*. Authors of key Filipino NLP datasets and benchmarks, including the TLUnified corpus.
 
-- **Miranda, L.J. (2023).** calamanCy: A Tagalog Natural Language Processing Toolkit. SpaCy-based NLP pipeline for Tagalog that informed the morphological analysis approach.
-
-- **Affix and root data** compiled from Wiktionary's Philippine language entries.
+- **Miranda, L. J. (2023).** [calamanCy: A Tagalog Natural Language Processing Toolkit](https://aclanthology.org/2023.nlposs-1.1/). *Proceedings of the 3rd Workshop for Natural Language Processing Open Source Software (NLP-OSS)*. SpaCy-based NLP pipeline for Tagalog that informed the morphological analysis approach.
 
 ## License
 
