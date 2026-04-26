@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+filipino_tokenizer/data/eval/train_corpus.txt
+filipino_tokenizer/data/eval/test_corpus.txt
+filipino_tokenizer/data/eval/eval_corpus.txt

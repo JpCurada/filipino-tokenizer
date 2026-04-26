@@ -9,15 +9,11 @@ Covers:
 """
 
 import os
-import sys
 import tempfile
 import unittest
 
-# Ensure repo root is on path so `from src.…` imports work
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-from src.tagalog.tokenizer import TagalogTokenizer
-from src.tagalog.bpe import MorphAwareBPE, BOUNDARY
+from filipino_tokenizer.tagalog.tokenizer import TagalogTokenizer
+from filipino_tokenizer.tagalog.bpe import MorphAwareBPE, BOUNDARY
 
 
 # --------------------------------------------------------------------- #

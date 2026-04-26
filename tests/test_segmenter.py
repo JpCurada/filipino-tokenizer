@@ -1,5 +1,5 @@
 import unittest
-from src.tagalog.segmenter import TagalogSegmenter
+from filipino_tokenizer.tagalog.segmenter import TagalogSegmenter
 
 
 class TestTagalogSegmenterSimple(unittest.TestCase):

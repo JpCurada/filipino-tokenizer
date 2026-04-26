@@ -1,6 +1,5 @@
 import unittest
-from src.tagalog.affixes import TagalogAffixes
-from src.cebuano.affixes import CebuanoAffixes
+from filipino_tokenizer.tagalog.affixes import TagalogAffixes
 
 
 class TestTagalogAffixesLoad(unittest.TestCase):
@@ -27,16 +26,6 @@ class TestTagalogAffixesLoad(unittest.TestCase):
             self.assertIn('function', meta)
             self.assertIn('etymology', meta)
 
-    def test_no_foreign_language_bleed(self):
-        # CebuanoAffixes should load different (or overlapping) entries —
-        # neither set should be identical to the other for suffixes.
-        cebuano = CebuanoAffixes()
-        tagalog_keys = set(self.affixes.prefixes.keys())
-        cebuano_keys = set(cebuano.prefixes.keys())
-        # There may be shared affix strings but at least one language has
-        # some prefix unique to it (the tables contain language-specific entries).
-        self.assertGreater(len(tagalog_keys), 0)
-        self.assertGreater(len(cebuano_keys), 0)
 
 
 class TestTagalogAffixesContent(unittest.TestCase):

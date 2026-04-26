@@ -1,0 +1,36 @@
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "filipino-tokenizer"
+version = "0.1.0"
+description = "Morphology-aware BPE tokenizer for Philippine languages (Tagalog)"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+keywords = ["nlp", "tokenizer", "tagalog", "filipino", "bpe", "morphology"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+]
+
+[project.urls]
+Homepage = "https://github.com/JpCurada/filipino-tokenizer"
+Repository = "https://github.com/JpCurada/filipino-tokenizer"
+Issues = "https://github.com/JpCurada/filipino-tokenizer/issues"
+
+[tool.setuptools.packages.find]
+include = ["filipino_tokenizer*"]
+
+[tool.setuptools.package-data]
+"filipino_tokenizer" = ["data/*.json"]
