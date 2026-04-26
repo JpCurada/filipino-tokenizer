@@ -262,6 +262,104 @@ expects them:
 
 ----
 
+HuggingFace Transformers integration
+--------------------------------------
+
+``TagalogHFTokenizer`` implements the ``PreTrainedTokenizer`` interface so it works
+directly with any HuggingFace-compatible training framework.
+
+.. code-block:: bash
+
+   pip install filipino-tokenizer[hf]
+
+Loading a trained tokenizer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   from filipino_tokenizer.tagalog import TagalogHFTokenizer
+
+   tok = TagalogHFTokenizer(
+       vocab_file="my_tokenizer/vocab.json",
+       merges_file="my_tokenizer/merges.txt",
+   )
+
+   print(tok.vocab_size)      # 32000
+   print(tok.bos_token)       # '<s>'
+   print(tok.pad_token_id)    # 0
+
+Batch encoding
+~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   sentences = [
+       "Kumain siya ng pagkain.",
+       "Nagtatrabaho ang tatay sa opisina araw-araw.",
+   ]
+   encoding = tok(sentences, padding=True, truncation=True, return_tensors="pt")
+   # encoding["input_ids"]       — shape (2, seq_len)
+   # encoding["attention_mask"]  — shape (2, seq_len)
+
+Save and reload in HuggingFace format
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   tok.save_pretrained("hf_tokenizer/")
+   # Creates: vocab.json, merges.txt, tokenizer_config.json, special_tokens_map.json
+
+   tok2 = TagalogHFTokenizer.from_pretrained("hf_tokenizer/")
+
+Building a dataset for causal LM training
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   import torch
+   from torch.utils.data import Dataset
+
+   class FilipinoTextDataset(Dataset):
+       def __init__(self, texts, tokenizer, max_length=512):
+           self.encodings = tokenizer(
+               texts,
+               max_length=max_length,
+               padding="max_length",
+               truncation=True,
+               return_tensors="pt",
+           )
+
+       def __len__(self):
+           return self.encodings["input_ids"].shape[0]
+
+       def __getitem__(self, idx):
+           item = {k: v[idx] for k, v in self.encodings.items()}
+           item["labels"] = item["input_ids"].clone()
+           return item
+
+Setting up a model
+~~~~~~~~~~~~~~~~~~
+
+The only tokenizer-specific value a model needs is ``vocab_size``:
+
+.. code-block:: python
+
+   from transformers import GPT2Config, GPT2LMHeadModel
+
+   config = GPT2Config(
+       vocab_size=tok.vocab_size,
+       pad_token_id=tok.pad_token_id,
+       bos_token_id=tok.bos_token_id,
+       eos_token_id=tok.eos_token_id,
+   )
+   model = GPT2LMHeadModel(config)
+
+The same pattern works for any architecture (``LlamaForCausalLM``,
+``BertForMaskedLM``, ``T5ForConditionalGeneration``, etc.) — only the
+config class changes.
+
+----
+
 Running tests
 -------------
 

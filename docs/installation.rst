@@ -40,10 +40,32 @@ Verify the installation
 Optional dependencies
 ---------------------
 
-The core library has no optional dependencies.  The demo notebooks in ``demo/``
-use ``plotly``, ``tiktoken``, and ``sentencepiece`` for comparisons — install
-those separately if you want to run the notebooks:
+HuggingFace integration
+~~~~~~~~~~~~~~~~~~~~~~~
+
+To use ``TagalogHFTokenizer`` with ``transformers``-based training pipelines:
+
+.. code-block:: bash
+
+   pip install filipino-tokenizer[hf]
+
+This installs ``transformers>=4.30``.
+
+Demo notebooks
+~~~~~~~~~~~~~~
+
+The notebooks in ``demo/`` use additional packages for comparisons and visualisations:
 
 .. code-block:: bash
 
    pip install plotly tiktoken sentencepiece jupyter
+
+Corpus download
+~~~~~~~~~~~~~~~
+
+To download the Wikitext-TL-39 training corpus:
+
+.. code-block:: bash
+
+   pip install datasets
+   python scripts/download_corpus.py

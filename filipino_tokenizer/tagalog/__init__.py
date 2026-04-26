@@ -5,6 +5,7 @@ from filipino_tokenizer.tagalog.segmenter import TagalogSegmenter
 from filipino_tokenizer.tagalog.affixes import TagalogAffixes
 from filipino_tokenizer.tagalog.roots import TagalogRoots
 from filipino_tokenizer.tagalog.phonology import TagalogPhonology
+from filipino_tokenizer.tagalog.hf_tokenizer import TagalogHFTokenizer
 
 __all__ = [
     "TagalogTokenizer",
@@ -12,4 +13,5 @@ __all__ = [
     "TagalogAffixes",
     "TagalogRoots",
     "TagalogPhonology",
+    "TagalogHFTokenizer",
 ]

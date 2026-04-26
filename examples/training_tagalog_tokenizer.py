@@ -1,155 +1,62 @@
 """
-Training a Tagalog Tokenizer
-=============================
+Train the Tagalog tokenizer on the Wikitext-TL39 corpus.
 
-Complete workflow: create a small corpus, train a morphology-aware BPE
-tokenizer, save it to disk, and compare its output against a naive
-character-level baseline.
+Download the corpus first:
+    python scripts/download_corpus.py
 
-Run from the project root:
-    python examples/training_tagalog_tokenizer.py
+Usage:
+    python examples/training_tagalog_tokenizer.py [corpus] [--vocab-size N] [--output DIR]
+
+Defaults:
+    corpus     filipino_tokenizer/data/eval/train_corpus.txt  (Wikitext-TL39)
+    vocab-size 32000
+    output     demo/models/morph/
 """
 
+import argparse
 import os
-import tempfile
+import sys
+import time
 
-from filipino_tokenizer.tagalog import TagalogTokenizer, TagalogSegmenter
+from filipino_tokenizer.tagalog import TagalogTokenizer
 
-
-# -------------------------------------------------------------------- #
-#  1.  Prepare a small Filipino corpus                                  #
-# -------------------------------------------------------------------- #
-
-CORPUS = """\
-Kumain siya ng pagkain sa hapagkainan.
-Ang mga bata ay masayang naglalaro sa labas ng bahay.
-Maganda ang panahon ngayon kaya lumabas kami para maglakad.
-Bumili ako ng mga prutas sa palengke kahapon.
-Nagluluto ang nanay ng masarap na adobo para sa buong pamilya.
-Pumunta kami sa simbahan tuwing Linggo ng umaga.
-Nagbabasa ang mga estudyante ng libro sa silid-aklatan.
-Kumanta ang mga bata sa programa ng paaralan nila.
-Umuulan kaya nagdala ako ng payong at kapote.
-Naglinis kami ng bahay bago dumating ang mga bisita.
-Nagtatrabaho ang tatay sa opisina araw-araw.
-Kinain niya ang lahat ng pagkain sa mesa.
-Magluluto ako ng sinigang na baboy mamaya.
-Natutulog na ang sanggol sa kuna niya.
-Gumagawa siya ng takdang-aralin bago matulog.
-"""
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_CORPUS = os.path.join(_ROOT, "filipino_tokenizer", "data", "eval", "train_corpus.txt")
+DEFAULT_OUTPUT = os.path.join(_ROOT, "demo", "models", "morph")
 
 
 def main():
-    # Write corpus to a temp file
-    tmpdir = tempfile.mkdtemp()
-    corpus_path = os.path.join(tmpdir, "corpus.txt")
-    with open(corpus_path, "w", encoding="utf-8") as f:
-        f.write(CORPUS)
+    parser = argparse.ArgumentParser(description="Train the Tagalog BPE tokenizer on Wikitext-TL39")
+    parser.add_argument("corpus", nargs="?", default=DEFAULT_CORPUS,
+                        help="Path to training corpus (default: Wikitext-TL39 local file)")
+    parser.add_argument("--vocab-size", type=int, default=32_000,
+                        help="BPE vocabulary size (default: 32000)")
+    parser.add_argument("--output", default=DEFAULT_OUTPUT,
+                        help="Directory to save trained tokenizer (default: demo/models/morph/)")
+    args = parser.parse_args()
 
-    # ---------------------------------------------------------------- #
-    #  2.  Train the tokenizer                                          #
-    # ---------------------------------------------------------------- #
+    if not os.path.isfile(args.corpus):
+        print(f"ERROR: Corpus not found: {args.corpus}", file=sys.stderr)
+        print("Run `python scripts/download_corpus.py` to download Wikitext-TL39.", file=sys.stderr)
+        sys.exit(1)
 
-    print("=" * 64)
-    print("  Filipino Tokenizer - Training Example")
-    print("=" * 64)
+    size_mb = os.path.getsize(args.corpus) / 1_000_000
+    print(f"Corpus    : {args.corpus} ({size_mb:.1f} MB)")
+    print(f"Vocab size: {args.vocab_size:,}")
+    print(f"Output    : {args.output}")
     print()
 
     tok = TagalogTokenizer()
-    print(f"Training on {corpus_path} ...")
-    tok.train(corpus_path, vocab_size=500)
-    print(f"Vocabulary size: {len(tok.bpe.vocab)}")
-    print(f"Learned merges:  {len(tok.bpe.merges)}")
-    print()
+    t0 = time.perf_counter()
+    tok.train(args.corpus, vocab_size=args.vocab_size)
+    elapsed = time.perf_counter() - t0
 
-    # ---------------------------------------------------------------- #
-    #  3.  Save and reload                                              #
-    # ---------------------------------------------------------------- #
+    print(f"\nDone in {elapsed / 60:.1f} min")
+    print(f"  Vocabulary : {len(tok.bpe.vocab):,} tokens")
+    print(f"  Merges     : {len(tok.bpe.merges):,}")
 
-    save_dir = os.path.join(tmpdir, "tokenizer")
-    tok.save(save_dir)
-    print(f"Saved tokenizer to {save_dir}/")
-
-    tok2 = TagalogTokenizer()
-    tok2.load(save_dir)
-    print("Reloaded tokenizer from disk - OK")
-    print()
-
-    # ---------------------------------------------------------------- #
-    #  4.  Encode / decode examples                                     #
-    # ---------------------------------------------------------------- #
-
-    examples = [
-        "Kumain siya ng pagkain.",
-        "Maganda ang panahon ngayon.",
-        "Nagluluto ang nanay ng masarap na adobo.",
-        "Bumili ako ng mga prutas sa palengke.",
-    ]
-
-    print("-" * 64)
-    print("  Encode / Decode Round-trip")
-    print("-" * 64)
-    for text in examples:
-        ids = tok.encode(text)
-        decoded = tok.decode(ids)
-        tokens = tok.tokenize(text)
-        print(f"  Input:   {text}")
-        print(f"  Tokens:  {tokens}")
-        print(f"  IDs:     {ids}")
-        print(f"  Decoded: {decoded}")
-        print()
-
-    # ---------------------------------------------------------------- #
-    #  5.  Morpheme-aware vs naive character-level comparison            #
-    # ---------------------------------------------------------------- #
-
-    print("-" * 64)
-    print("  Morpheme-Aware BPE  vs  Character-Level Baseline")
-    print("-" * 64)
-    print()
-
-    seg = TagalogSegmenter()
-
-    for text in examples:
-        bpe_tokens = tok.tokenize(text)
-        char_tokens = list(text.replace(" ", ""))
-
-        bpe_count = len(bpe_tokens)
-        char_count = len(char_tokens)
-        savings = ((char_count - bpe_count) / char_count) * 100
-
-        print(f"  Sentence: {text}")
-        print(f"    Morphemes:    {seg.segment_text(text)}")
-        print(f"    BPE tokens:   {bpe_count:3d}  {bpe_tokens}")
-        print(f"    Char tokens:  {char_count:3d}  (one per character)")
-        print(f"    Savings:      {savings:.0f}% fewer tokens with BPE")
-        print()
-
-    # ---------------------------------------------------------------- #
-    #  6.  Show how the root "kain" is shared across inflections        #
-    # ---------------------------------------------------------------- #
-
-    print("-" * 64)
-    print("  Root Sharing: 'kain' across inflected forms")
-    print("-" * 64)
-    print()
-
-    kain_words = ["kain", "kumain", "pagkain", "kinain"]
-    for word in kain_words:
-        morphemes = seg.segment(word)
-        tokens = tok.tokenize(word)
-        ids = tok.encode(word)
-        print(f"  {word:12s}  morphemes={morphemes!s:24s}  "
-              f"tokens={tokens}  ids={ids}")
-
-    print()
-    print("=" * 64)
-    print("  Done.")
-    print("=" * 64)
-
-    # Cleanup
-    import shutil
-    shutil.rmtree(tmpdir, ignore_errors=True)
+    tok.save(args.output)
+    print(f"\nSaved to {args.output}/")
 
 
 if __name__ == "__main__":
