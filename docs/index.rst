@@ -45,6 +45,7 @@ even though the surface forms look very different.
    api/tokenizer
    api/segmenter
    api/bpe
+   api/hf_tokenizer
 
 .. toctree::
    :maxdepth: 1

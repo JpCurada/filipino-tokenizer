@@ -14,9 +14,14 @@ The tokenizer trains on a plain UTF-8 text file with **one sentence per line**.
    Maganda ang panahon ngayon kaya lumabas kami.
    Nagluluto ang nanay ng masarap na adobo para sa pamilya.
 
-Save this as ``corpus.txt``.  For production use, a corpus of at least
-100,000 sentences is recommended (e.g. `WikiText-TL-39
-<https://github.com/jcblaisecruz02/Filipino-Text-Benchmarks>`_).
+Save this as ``corpus.txt``.  For production use, download the
+`Wikitext-TL-39 <https://huggingface.co/datasets/linkanjarad/Wikitext-TL39>`_
+corpus (~1.5M sentences) with the included script:
+
+.. code-block:: bash
+
+   pip install datasets
+   python scripts/download_corpus.py
 
 2. Train
 --------
@@ -71,6 +76,34 @@ This writes two files:
 - ``my_tokenizer/vocab.json`` — token-to-ID mapping
 - ``my_tokenizer/merges.txt`` — learned BPE merge rules
 
+6. HuggingFace integration
+--------------------------
+
+``TagalogHFTokenizer`` wraps the tokenizer behind the ``PreTrainedTokenizer``
+interface for use with ``Trainer``, TRL, Axolotl, and any other HF pipeline.
+
+.. code-block:: bash
+
+   pip install filipino-tokenizer[hf]
+
+.. code-block:: python
+
+   from filipino_tokenizer.tagalog import TagalogHFTokenizer
+
+   tok = TagalogHFTokenizer(
+       vocab_file="my_tokenizer/vocab.json",
+       merges_file="my_tokenizer/merges.txt",
+   )
+
+   # Standard HuggingFace call
+   encoding = tok("Kumain siya ng pagkain.", return_tensors="pt")
+
+   # Save / reload in HF format
+   tok.save_pretrained("hf_tokenizer/")
+   tok2 = TagalogHFTokenizer.from_pretrained("hf_tokenizer/")
+
+See :doc:`api/hf_tokenizer` for the full API reference.
+
 What's next?
 ------------
 
@@ -78,4 +111,5 @@ What's next?
   batch encoding, and integration with ML frameworks.
 - **Researchers** — see :doc:`guides/researchers` for the morphological
   segmentation algorithm, the CBPE constraint, and evaluation methodology.
-- **API details** — see :doc:`api/tokenizer`, :doc:`api/segmenter`, :doc:`api/bpe`.
+- **API details** — see :doc:`api/tokenizer`, :doc:`api/segmenter`,
+  :doc:`api/bpe`, :doc:`api/hf_tokenizer`.

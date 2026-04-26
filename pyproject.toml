@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "filipino-tokenizer"
-version = "0.1.0"
+version = "0.2.0"
 description = "Morphology-aware BPE tokenizer for Philippine languages (Tagalog)"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -23,6 +23,9 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Text Processing :: Linguistic",
 ]
+
+[project.optional-dependencies]
+hf = ["transformers>=4.30"]
 
 [project.urls]
 Homepage = "https://github.com/JpCurada/filipino-tokenizer"
