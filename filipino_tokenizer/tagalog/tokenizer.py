@@ -178,6 +178,21 @@ class TagalogTokenizer:
         """Load a previously saved tokenizer from *directory*."""
         self.bpe.load(directory)
 
+    def load_pretrained(self) -> None:
+        """
+        Load the bundled pretrained 32k Tagalog tokenizer.
+
+        No path needed — the model is included in the package::
+
+            tok = TagalogTokenizer()
+            tok.load_pretrained()
+            ids = tok.encode("Kumain siya ng pagkain.")
+        """
+        pretrained_dir = os.path.normpath(
+            os.path.join(os.path.dirname(__file__), "..", "data", "pretrained")
+        )
+        self.bpe.load(pretrained_dir)
+
     # ================================================================== #
     #  Internal helpers                                                    #
     # ================================================================== #
