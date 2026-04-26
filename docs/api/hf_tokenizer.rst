@@ -74,20 +74,30 @@ Attributes
 Examples
 --------
 
-Load and encode
-~~~~~~~~~~~~~~~
+Load the bundled pretrained model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+No path required — the 32k model is shipped with the package:
 
 .. code-block:: python
 
    from filipino_tokenizer.tagalog import TagalogHFTokenizer
 
+   tok = TagalogHFTokenizer()   # loads bundled pretrained model
+   encoding = tok("Kumain siya ng pagkain.", return_tensors="pt")
+   # {"input_ids": tensor([[...]]), "attention_mask": tensor([[...]])}
+
+Load from a custom trained model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   tok = TagalogHFTokenizer.from_pretrained("my_tokenizer/")
+   # or pass files directly:
    tok = TagalogHFTokenizer(
        vocab_file="my_tokenizer/vocab.json",
        merges_file="my_tokenizer/merges.txt",
    )
-
-   encoding = tok("Kumain siya ng pagkain.", return_tensors="pt")
-   # {"input_ids": tensor([[...]]), "attention_mask": tensor([[...]])}
 
 Batch with padding
 ~~~~~~~~~~~~~~~~~~

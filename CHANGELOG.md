@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-04-26
+
+### Added
+- **Bundled pretrained model**: `vocab.json` + `merges.txt` (32k vocabulary, trained on Wikitext-TL-39) are now shipped inside the package at `filipino_tokenizer/data/pretrained/`. No separate download or path needed.
+- **`TagalogTokenizer.load_pretrained()`**: Loads the bundled model in one call — works after `pip install`, on Kaggle, Colab, or any environment.
+- **Zero-argument `TagalogHFTokenizer()`**: `vocab_file` is now optional. Calling `TagalogHFTokenizer()` with no arguments loads the bundled pretrained model automatically.
+
+### Changed
+- `TagalogHFTokenizer.__init__` signature: `vocab_file` and `merges_file` are now optional (`None` by default). Existing code passing explicit paths continues to work unchanged.
+
 ## [0.2.0] - 2026-04-26
 
 ### Added

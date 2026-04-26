@@ -30,6 +30,9 @@ Method reference
    * - ``tokenize``
      - ``(text) → list[str]``
      - Return subword strings instead of IDs (for inspection).
+   * - ``load_pretrained``
+     - ``()``
+     - Load the bundled 32k model shipped with the package. No path needed.
    * - ``save``
      - ``(directory)``
      - Write ``vocab.json`` and ``merges.txt`` to *directory*.
@@ -61,8 +64,21 @@ Attributes
 Examples
 --------
 
-Training on a corpus file
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Load the bundled pretrained model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+No download or path required — the 32k model is shipped with the package:
+
+.. code-block:: python
+
+   from filipino_tokenizer.tagalog import TagalogTokenizer
+
+   tok = TagalogTokenizer()
+   tok.load_pretrained()
+   ids = tok.encode("Kumain siya ng pagkain.")
+
+Train on your own corpus
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
