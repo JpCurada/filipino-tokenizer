@@ -26,52 +26,68 @@ The root *kain* is preserved as a single token and shared across both words. Thi
 
 ## Installation
 
-The core library requires no external dependencies (like HuggingFace or SentencePiece) and runs purely on the standard library.
-
 ```bash
 pip install filipino-tokenizer
 ```
 
-To install from source for development:
+Pre-built wheels are available for Linux, macOS, and Windows on Python 3.10–3.13 — no compiler or Rust toolchain required.
+
+For HuggingFace Transformers integration:
+
+```bash
+pip install filipino-tokenizer[hf]
+```
+
+To install from source for development (requires Rust via [rustup.rs](https://rustup.rs)):
 
 ```bash
 git clone https://github.com/JpCurada/filipino-tokenizer.git
 cd filipino-tokenizer
-pip install -e .[dev]
+pip install -e .
 ```
 
 ## Quick Start
 
+### Use the bundled pretrained model
+
+A 32k-vocabulary model trained on Wikitext-TL-39 ships inside the package — no download needed.
+
 ```python
-import os, tempfile
 from filipino_tokenizer.tagalog import TagalogTokenizer
 
-# Write a small training corpus
-corpus_text = """
-Kumain siya ng pagkain sa hapagkainan.
-Maganda ang panahon ngayon kaya lumabas kami.
-Nagluluto ang nanay ng masarap na adobo para sa pamilya.
-"""
-tmpdir = tempfile.mkdtemp()
-corpus_path = os.path.join(tmpdir, "corpus.txt")
-with open(corpus_path, "w", encoding="utf-8") as f:
-    f.write(corpus_text)
-
-# Train
 tok = TagalogTokenizer()
-tok.train(corpus_path, vocab_size=500)
+tok.load_pretrained()
 
-# Encode and decode
 ids = tok.encode("Kumain siya ng pagkain.")
-text = tok.decode(ids)
-print(text)  # kumain siya ng pagkain.
+print(tok.decode(ids))    # kumain siya ng pagkain.
+print(tok.tokenize("Kumain siya ng pagkain."))
+# ['k', 'um', 'ain', ' ', 'siya', ' ', 'ng', ' ', 'pag', 'kain', '.']
+```
 
-# Inspect subword tokens
-tokens = tok.tokenize("Kumain siya ng pagkain.")
-print(tokens)  # ['k', 'um', 'ain', ' ', 'siya', ' ', 'ng', ' ', 'pag', 'kain', '.']
+### HuggingFace integration
 
-# Save and reload
+```python
+from filipino_tokenizer.tagalog import TagalogHFTokenizer
+
+tok = TagalogHFTokenizer()   # loads bundled model
+encoding = tok("Kumain siya ng pagkain.", return_tensors="pt")
+```
+
+Works directly with `Trainer`, TRL, Axolotl, LlamaFactory, and any other HuggingFace-based training pipeline.
+
+### Train a custom model
+
+```python
+from filipino_tokenizer.tagalog import TagalogTokenizer
+
+tok = TagalogTokenizer()
+tok.train("corpus.txt", vocab_size=32000)
+
+ids = tok.encode("Kumain siya ng pagkain.")
+print(tok.decode(ids))   # kumain siya ng pagkain.
+
 tok.save("my_tokenizer/")
+
 tok2 = TagalogTokenizer()
 tok2.load("my_tokenizer/")
 ```
@@ -93,7 +109,7 @@ The tokenizer is a three-stage pipeline.
 
 If no valid segmentation is found, the word is returned whole.
 
-**Stage 3: Constrained BPE.** The `MorphAwareBPE` class runs an optimized, incremental byte-pair encoding algorithm (using doubly-linked lists and max-heaps) with one critical constraint: it never merges a pair of symbols that would cross a morpheme boundary marker. This means learned subword units always stay within a single morpheme. The approach follows the Constrained BPE (CBPE) method described by Tacorda et al.
+**Stage 3: Constrained BPE.** The `MorphAwareBPE` class runs an optimized, incremental byte-pair encoding algorithm (using doubly-linked lists and max-heaps) with one critical constraint: it never merges a pair of symbols that would cross a morpheme boundary marker (`▁`). Merges that respect this constraint are learned at training time. At inference time, the greedy BPE encoder is implemented in Rust (`_bpe_rust.CoreBPE` via PyO3) for fast, allocation-efficient encoding.
 
 ## Evaluation
 
@@ -116,6 +132,8 @@ Morpheme F1 Accuracy           | 64.5%      | 20.8%      | 12.0%
 
 ```
 filipino-tokenizer/
+    src/
+        lib.rs                  # Rust BPE backend (CoreBPE, PyO3 bindings)
     filipino_tokenizer/
         base.py                 # BaseAffixes, BaseRoots, BaseSegmenter, BaseTokenizer
         data/
@@ -125,22 +143,34 @@ filipino-tokenizer/
             circumfix_table.json    # Circumfix definitions
             tagalog_roots.json      # ~30k Tagalog root words
             bisaya_roots.json       # Bisaya root words
+            pretrained/
+                vocab.json          # Bundled 32k vocabulary (Wikitext-TL-39)
+                merges.txt          # Bundled merge rules
         tagalog/
             __init__.py         # Package exports
             affixes.py          # TagalogAffixes (filters for language="Tagalog")
             roots.py            # TagalogRoots (loads tagalog_roots.json)
             phonology.py        # Nasal assimilation, suffix h-insertion
             segmenter.py        # TagalogSegmenter (multi-pass morpheme decomposition)
-            bpe.py              # MorphAwareBPE (constrained BPE, no cross-boundary merges)
+            bpe.py              # MorphAwareBPE (constrained BPE, delegates to Rust)
             tokenizer.py        # TagalogTokenizer (segmenter + BPE pipeline)
+            hf_tokenizer.py     # TagalogHFTokenizer (PreTrainedTokenizer wrapper)
     tests/
         test_affixes.py         # Affix loading and filtering tests
         test_segmenter.py       # Morphological segmentation tests
         test_tokenizer.py       # Full pipeline tests (round-trip, consistency, efficiency)
+        test_rust_backend.py    # Rust extension tests (encode/decode, morpheme boundaries)
     examples/
         training_tagalog_tokenizer.py   # End-to-end training example
     demo/
-        demo_tagalog_tokenizer.ipynb    # Jupyter notebook demo
+        demo_tagalog_tokenizer.ipynb    # Usage guide notebook
+        tokenizer_comparisons.ipynb     # Benchmark vs GPT-4 and SentencePiece
+        tokenizer_comparisons_fil.ipynb # Side-by-side comparison on Filipino sentences
+        slm_tokenizer_comparison.ipynb  # SLM training metrics comparison
+        slm_training_experiment.ipynb   # Full GPT-2 training experiment
+    Cargo.toml                  # Rust crate configuration
+    setup.py                    # setuptools-rust build hook
+    pyproject.toml              # Package metadata and build system
 ```
 
 ## Running Tests
@@ -153,6 +183,10 @@ python -m unittest discover tests -v
 python -m unittest tests.test_affixes -v
 python -m unittest tests.test_segmenter -v
 python -m unittest tests.test_tokenizer -v
+python -m unittest tests.test_rust_backend -v
+
+# Rust unit tests (requires cargo)
+cargo test
 ```
 
 ## Adding a New Language
