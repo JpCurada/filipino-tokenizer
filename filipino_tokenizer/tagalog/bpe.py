@@ -19,6 +19,8 @@ import os
 import re
 from collections import Counter
 
+from filipino_tokenizer._bpe_rust import CoreBPE as _RustCoreBPE
+
 
 # Morpheme boundary marker inserted between segmented morphemes
 BOUNDARY = "▁"
@@ -56,8 +58,19 @@ class MorphAwareBPE:
         self.id_to_token: dict[int, str] = {}
         # ordered list of (token_a, token_b) merge pairs
         self.merges: list[tuple[str, str]] = []
-        # Inference cache
+        # Inference cache (per unique surface token, Python-level)
         self._encode_cache: dict[str, list[int]] = {}
+        # Rust BPE backend — set by _init_rust() after vocab+merges are loaded
+        self._rust: _RustCoreBPE | None = None
+
+    # ================================================================== #
+    #  Rust backend initialisation                                         #
+    # ================================================================== #
+
+    def _init_rust(self) -> None:
+        """Build the Rust CoreBPE from the current vocab and merges."""
+        self._encode_cache.clear()
+        self._rust = _RustCoreBPE(self.vocab, self.merges)
 
     # ================================================================== #
     #  Training                                                            #
@@ -221,6 +234,8 @@ class MorphAwareBPE:
                         pair_positions[new_pair2].add(node)
                         heapq.heappush(heap, (-pair_counts[new_pair2], new_pair2))
 
+        self._init_rust()
+
     # ------------------------------------------------------------------ #
     #  Internal training helpers                                           #
     # ------------------------------------------------------------------ #
@@ -263,55 +278,16 @@ class MorphAwareBPE:
         """
         Encode *text* into a list of token IDs.
 
-        The text is first split into individual characters, then merge rules
-        are applied in order.  Unknown characters map to ``<unk>``.
+        Delegates to the Rust CoreBPE backend for greedy BPE encoding.
+        Results are cached per unique surface token.
         """
         if not text:
             return []
-            
         if text in self._encode_cache:
             return list(self._encode_cache[text])
-
-        # Start with characters
-        symbols = list(text)
-        
-        # Apply merges in learned order
-        # Note: Since train() never generated merges with BOUNDARY,
-        # _apply_merges will naturally stop at BOUNDARY markers.
-        symbols = self._apply_merges(symbols)
-        
-        # Convert to IDs
-        all_ids: list[int] = []
-        for sym in symbols:
-            if sym in self.vocab:
-                all_ids.append(self.vocab[sym])
-            else:
-                # Character fallback for unseen symbols
-                for char in sym:
-                    all_ids.append(self.vocab.get(char, self.vocab.get(self.UNK, 1)))
-
-        self._encode_cache[text] = list(all_ids)
-        return all_ids
-
-    def _apply_merges(self, symbols: list[str]) -> list[str]:
-        """Apply all learned merges to *symbols* in order."""
-        for a, b in self.merges:
-            merged = a + b
-            new_symbols: list[str] = []
-            i = 0
-            while i < len(symbols):
-                if (
-                    i < len(symbols) - 1
-                    and symbols[i] == a
-                    and symbols[i + 1] == b
-                ):
-                    new_symbols.append(merged)
-                    i += 2
-                else:
-                    new_symbols.append(symbols[i])
-                    i += 1
-            symbols = new_symbols
-        return symbols
+        ids = self._rust.encode(text)
+        self._encode_cache[text] = list(ids)
+        return ids
 
     # ================================================================== #
     #  Decoding                                                            #
@@ -321,19 +297,10 @@ class MorphAwareBPE:
         """
         Decode a list of token IDs back to a string.
 
-        Special tokens (<pad>, <unk>, <s>, </s>) are silently dropped.
-        Boundary markers are removed so the output reads naturally.
+        Special tokens are silently dropped; boundary markers are removed.
+        Delegates to the Rust CoreBPE backend.
         """
-        tokens: list[str] = []
-        for token_id in ids:
-            tok = self.id_to_token.get(token_id, self.UNK)
-            if tok in self.SPECIALS:
-                continue
-            tokens.append(tok)
-        text = "".join(tokens)
-        # Remove any remaining boundary markers
-        text = text.replace(BOUNDARY, "")
-        return text
+        return self._rust.decode(ids)
 
     # ================================================================== #
     #  Serialisation                                                       #
@@ -378,3 +345,5 @@ class MorphAwareBPE:
                 parts = line.split("\t")
                 if len(parts) == 2:
                     self.merges.append((parts[0], parts[1]))
+
+        self._init_rust()
