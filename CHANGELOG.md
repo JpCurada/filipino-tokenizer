@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-04-27
+
+### Fixed
+
+- **HuggingFace wrapper — `_convert_token_to_id` never returns `None`**: After `super().__init__()`, HuggingFace wraps special tokens in `AddedToken` objects. Passing an `AddedToken` as a plain `dict` key failed the vocab lookup in some HF versions, making `unk_id` undefined and allowing `None` to propagate into padded `input_ids`, crashing batch tokenisation with `ValueError: type of None unknown`. Fixed by calling `str(self.unk_token)` before the lookup and adding a final `isinstance(result, int)` guard so the function always returns a valid integer.
+- **Broader import-error handling for `transformers`**: The `try/except ImportError` around the `transformers` import was too narrow — partial installs can raise `AttributeError` or other exceptions, silently setting `PreTrainedTokenizer = object` and stripping `batch_encode_plus` and other HF methods from the class. Changed to `except Exception` and replaced the `object` fallback with a proper stub class so the MRO is never crippled.
+
+## [0.4.0] - 2026-04-27
+
+### Added
+
+- **Rust BPE backend** — `filipino_tokenizer._bpe_rust.CoreBPE` is a compiled Rust extension (PyO3 + `rustc-hash`) replacing the pure-Python encode/decode loop. The greedy BPE algorithm uses a `FxHashMap` for O(1) merge-rank lookup and a reusable key buffer to eliminate per-call allocation overhead.
+- **`MorphAwareBPE._init_rust()`** — builds `CoreBPE` from the current `vocab` and `merges` after `train()` or `load()`. The Python API is unchanged; the Rust layer is transparent to callers.
+- **`setup.py` + `setuptools-rust`** — `pip install` now compiles the extension automatically (`setuptools-rust>=1.5.2` added to build requirements). Pre-built wheels on PyPI mean no Rust toolchain is needed for end-users.
+- **Integration test suite** — `tests/test_rust_backend.py` covers extension loading, encode/decode correctness, morpheme-boundary enforcement, cache consistency, and full-sentence round-trips.
+
+### Changed
+
+- `MorphAwareBPE.encode()` and `decode()` delegate entirely to the Rust backend. The pure-Python `_apply_merges()` method has been removed.
+
 ## [0.3.2] - 2026-04-27
 
 ### Fixed

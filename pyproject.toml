@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "filipino-tokenizer"
-version = "0.4.0"
+version = "0.4.1"
 description = "Morphology-aware BPE tokenizer for Philippine languages (Tagalog)"
 readme = "README.md"
 license = { file = "LICENSE" }

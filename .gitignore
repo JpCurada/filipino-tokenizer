@@ -224,3 +224,6 @@ filipino_tokenizer/data/eval/eval_corpus.txt
 CLAUDE.md
 .claude/
 _wip/
+
+ .vscode/
+ tiktoken.md

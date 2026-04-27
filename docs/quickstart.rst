@@ -101,7 +101,7 @@ will be smaller if the corpus does not contain enough distinct character pairs.
 .. code-block:: python
 
    tokens = tok.tokenize("Kumain siya ng pagkain.")
-   # ['k', 'um', 'ain', ' ', 'siya', ' ', 'ng', ' ', 'pag', 'kain', '.']
+   # ['k', '▁', 'um', '▁', 'ain', ' ', 'siya', ' ', 'ng', ' ', 'pag', 'kain', '.']
 
 ``tokenize()`` returns strings instead of IDs — useful for debugging and
 understanding what the tokenizer is doing.
