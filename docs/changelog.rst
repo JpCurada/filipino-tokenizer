@@ -1,6 +1,40 @@
 Changelog
 =========
 
+0.4.0 (2026-04-27)
+-------------------
+
+Added
+~~~~~
+
+- **Rust BPE backend** — ``filipino_tokenizer._bpe_rust.CoreBPE`` is a compiled
+  Rust extension (PyO3 + ``rustc-hash``) that replaces the pure-Python encode/decode
+  loop. The greedy O(n²) BPE algorithm, tab-separated merge-rank lookup via
+  ``FxHashMap``, and a reusable key buffer eliminate per-call allocation overhead.
+
+- **``MorphAwareBPE._init_rust()``** — builds the ``CoreBPE`` from the current
+  ``vocab`` and ``merges`` after ``train()`` or ``load()``. The Python object retains
+  its ``encode``/``decode`` API; the Rust layer is transparent to callers.
+
+- **``setup.py`` + ``setuptools-rust``** — ``pip install`` now compiles the Rust
+  extension automatically (``setuptools-rust>=1.5.2`` added to build requirements).
+
+- **Integration test suite** — ``tests/test_rust_backend.py`` covers extension
+  loading, encode/decode correctness, morpheme-boundary enforcement, encode-cache
+  consistency, and full-sentence round-trips.
+
+Changed
+~~~~~~~
+
+- ``MorphAwareBPE.encode()`` and ``decode()`` delegate entirely to the Rust backend.
+  The pure-Python ``_apply_merges()`` method has been removed.
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+- **Rust is required to build the package.** Installing without a Rust toolchain will
+  fail at the compilation step. See the :doc:`installation` page for setup instructions.
+
 0.3.2 (2026-04-27)
 -------------------
 

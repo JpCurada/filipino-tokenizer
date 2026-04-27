@@ -5,8 +5,15 @@ Requirements
 ------------
 
 - Python 3.10 or later
-- No external runtime dependencies — the core library uses only the standard library
-  (``json``, ``os``, ``re``, ``collections``, ``heapq``)
+- No external runtime dependencies
+
+  Pre-built wheels are published for Linux, macOS, and Windows on Python 3.10–3.13.
+  ``pip install`` downloads the right binary — no compiler or Rust toolchain needed.
+
+  .. note::
+
+     Installing from source (e.g. cloning the repo and running ``pip install -e .``)
+     requires a Rust toolchain. See `rustup.rs <https://rustup.rs>`_ to install one.
 
 From PyPI
 ---------

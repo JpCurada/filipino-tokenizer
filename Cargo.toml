@@ -1,0 +1,16 @@
+[package]
+name = "filipino-tokenizer"
+version = "0.4.0"
+edition = "2021"
+
+[lib]
+name = "_bpe_rust"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3 = { version = "0.22", default-features = false, features = ["extension-module", "macros"] }
+rustc-hash = "2"
+
+[profile.release]
+lto = true
+opt-level = 3

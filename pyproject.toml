@@ -1,11 +1,11 @@
 
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=68", "wheel", "setuptools-rust>=1.5.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "filipino-tokenizer"
-version = "0.3.2"
+version = "0.4.0"
 description = "Morphology-aware BPE tokenizer for Philippine languages (Tagalog)"
 readme = "README.md"
 license = { file = "LICENSE" }
