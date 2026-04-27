@@ -17,7 +17,7 @@ running BPE, so the learned subword units are always linguistically meaningful.
    tok.train("corpus.txt", vocab_size=32000)
 
    tok.tokenize("Kumain siya ng pagkain.")
-   # ['k', 'um', 'ain', ' ', 'siya', ' ', 'ng', ' ', 'pag', 'kain', '.']
+   # ['k', '▁', 'um', '▁', 'ain', ' ', 'siya', ' ', 'ng', ' ', 'pag', 'kain', '.']
 
 The root *kain* (eat) appears as a single token in both *kumain* and *pagkain*,
 even though the surface forms look very different.

@@ -1,5 +1,9 @@
 # Filipino Tokenizer
 
+[![PyPI](https://img.shields.io/pypi/v/filipino-tokenizer)](https://pypi.org/project/filipino-tokenizer/)
+[![Python](https://img.shields.io/pypi/pyversions/filipino-tokenizer)](https://pypi.org/project/filipino-tokenizer/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 A morphology-aware BPE tokenizer for Philippine languages.
 
 Existing subword tokenizers (SentencePiece, HuggingFace BPE) treat Filipino text as raw character sequences. They have no knowledge of Filipino morphology, so they routinely split words at linguistically meaningless points. A word like *pinakamahusay* ("the best") gets fragmented into arbitrary substrings instead of its actual morphemes: *pinaka-* + *ma-* + *husay*.
@@ -8,21 +12,21 @@ This project fixes that. It combines a rule-based morphological segmenter with a
 
 ## Before and After
 
-Consider the sentence: *Kumain siya ng masarap na pagkain.*
+Consider the sentence: *kumain ka na ba?* ("Have you eaten?")
 
-A generic BPE tokenizer might produce:
-
-```
-["Ku", "main", " siya", " ng", " mas", "ar", "ap", " na", " pag", "ka", "in", "."]
-```
-
-This tokenizer understands that *kumain* contains the infix *-um-* and root *kain*, and that *pagkain* is prefix *pag-* plus the same root *kain*:
+**GPT-2 tokenizer** — arbitrary statistical splits:
 
 ```
-["k", "um", "ain", " ", "siya", " ", "ng", " ", "ma", "sarap", " ", "na", " ", "pag", "kain", "."]
+['k', 'um', 'ain', 'Ġka', 'Ġna', 'Ġba', '?']
 ```
 
-The root *kain* is preserved as a single token and shared across both words. This gives downstream models a head start on understanding Filipino word formation.
+**Filipino Tokenizer** — preserves the infix *-um-* and root *kain*:
+
+```
+['k', '▁', 'um', '▁', 'ain', ' ', 'ka', ' ', 'na', ' ', 'ba', '?']
+```
+
+The boundary marker `▁` (U+2581) separates morphemes within a word. The root *kain* (eat) is preserved as a consistent unit across all inflected forms: *kumain*, *pagkain*, *kainan*, *kinain*.
 
 ## Installation
 
@@ -61,7 +65,7 @@ tok.load_pretrained()
 ids = tok.encode("Kumain siya ng pagkain.")
 print(tok.decode(ids))    # kumain siya ng pagkain.
 print(tok.tokenize("Kumain siya ng pagkain."))
-# ['k', 'um', 'ain', ' ', 'siya', ' ', 'ng', ' ', 'pag', 'kain', '.']
+# ['k', '▁', 'um', '▁', 'ain', ' ', 'siya', ' ', 'ng', ' ', 'pag', 'kain', '.']
 ```
 
 ### HuggingFace integration
@@ -71,6 +75,15 @@ from filipino_tokenizer.tagalog import TagalogHFTokenizer
 
 tok = TagalogHFTokenizer()   # loads bundled model
 encoding = tok("Kumain siya ng pagkain.", return_tensors="pt")
+
+# Batch tokenisation with padding
+enc = tok(
+    ["Kumain siya ng pagkain.", "Nagluluto ang nanay."],
+    truncation=True,
+    max_length=128,
+    padding="max_length",
+    return_tensors=None,
+)
 ```
 
 Works directly with `Trainer`, TRL, Axolotl, LlamaFactory, and any other HuggingFace-based training pipeline.
@@ -109,24 +122,54 @@ The tokenizer is a three-stage pipeline.
 
 If no valid segmentation is found, the word is returned whole.
 
-**Stage 3: Constrained BPE.** The `MorphAwareBPE` class runs an optimized, incremental byte-pair encoding algorithm (using doubly-linked lists and max-heaps) with one critical constraint: it never merges a pair of symbols that would cross a morpheme boundary marker (`▁`). Merges that respect this constraint are learned at training time. At inference time, the greedy BPE encoder is implemented in Rust (`_bpe_rust.CoreBPE` via PyO3) for fast, allocation-efficient encoding.
+**Stage 3: Constrained BPE.** The `MorphAwareBPE` class runs an optimized, incremental byte-pair encoding algorithm (using doubly-linked lists and max-heaps) with one critical constraint: it never merges a pair of symbols that would cross a morpheme boundary marker (`▁`). The greedy BPE encoder is implemented in Rust (`_bpe_rust.CoreBPE` via PyO3) for fast, allocation-efficient inference.
 
 ## Evaluation
 
-We evaluated our `TagalogTokenizer` against standard industry tokenizers (GPT-4's `cl100k_base` and SentencePiece Unigram) on a 5,000-line corpus evaluation split.
+### Morpheme Boundary Accuracy
+
+We evaluated against standard tokenizers on 200 gold-standard Filipino words spanning prefixed, infixed, suffixed, circumfixed, stacked, and unsegmentable categories.
 
 ```text
 =======================================================================
-Metric                         | Ours       | GPT-4      | SPM       
+Metric                         | Ours       | GPT-4      | SPM
 -----------------------------------------------------------------------
-Total Tokens                   | 645        | 516        | 318       
-Tokens per Word (Fertility)    | 2.34       | 1.87       | 1.15      
-Morpheme F1 Accuracy           | 64.5%      | 20.8%      | 12.0%     
+Morpheme F1 Accuracy           | 46.0%      | 20.8%      | 12.0%
 =======================================================================
 ```
 
-- **Morpheme F1 Accuracy:** Our tokenizer is **3x more likely** to split Filipino words at actual linguistic boundaries than GPT-4, and **5x more likely** than SentencePiece.
-- **Fertility:** Our tokenizer produces slightly more tokens per word (2.34). This is the expected trade-off: because we strictly prevent merges across morpheme boundaries, frequent but morphologically distinct parts (like `pag` and `kain`) are kept separate, rather than being memorized as a single unbroken token (`pagkain`). This ensures robust compositional understanding for AI models.
+Our tokenizer is **2.2× more accurate** than GPT-4 at placing splits at actual linguistic boundaries, and **3.8× more accurate** than SentencePiece.
+
+### Small Language Model Experiment
+
+We trained identical GPT-2 mini (~25M params, 6 layers, 384-dim) models on 47,500 lines from Wikitext-TL-39 — same architecture, same data, same hyperparameters. The only difference was the tokenizer.
+
+**Results on 2,500 held-out Filipino sentences:**
+
+```text
+==================================================
+Tokenizer                   Perplexity
+--------------------------------------------------
+Filipino Tokenizer               24.79
+GPT-2 Tokenizer                 100.38
+--------------------------------------------------
+Winner: Filipino Tokenizer  (75.3% lower perplexity)
+==================================================
+```
+
+**Fertility comparison (2,000 validation lines):**
+
+```text
+Metric                            Filipino Tok       GPT-2 Tok
+--------------------------------------------------------------
+Fertility (tokens/word)                   2.53            2.05
+Mean sequence length                      57.6            46.8
+Context window utilization               22.5%           18.3%
+```
+
+The Filipino Tokenizer produces a slightly higher fertility (more tokens per word) because it enforces morpheme boundaries instead of greedily merging across them. The payoff is 75% lower perplexity — the model learns Filipino much more efficiently when every token is a meaningful linguistic unit.
+
+Full experiment: [Kaggle notebook](https://www.kaggle.com/code/jeypiic/filipino-tokenizer-experiment)
 
 ## Project Structure
 
@@ -163,13 +206,10 @@ filipino-tokenizer/
     examples/
         training_tagalog_tokenizer.py   # End-to-end training example
     demo/
-        demo_tagalog_tokenizer.ipynb    # Usage guide notebook
-        tokenizer_comparisons.ipynb     # Benchmark vs GPT-4 and SentencePiece
-        tokenizer_comparisons_fil.ipynb # Side-by-side comparison on Filipino sentences
-        slm_tokenizer_comparison.ipynb  # SLM training metrics comparison
-        slm_training_experiment.ipynb   # Full GPT-2 training experiment
+        demo_tagalog_tokenizer.ipynb        # Usage guide notebook
+        tokenizer_comparisons.ipynb         # Benchmark vs GPT-4 and SentencePiece
+        filipino-tokenizer-experiment.ipynb # Full GPT-2 SLM training experiment
     Cargo.toml                  # Rust crate configuration
-    setup.py                    # setuptools-rust build hook
     pyproject.toml              # Package metadata and build system
 ```
 
@@ -199,6 +239,24 @@ The architecture is designed to support multiple Philippine languages from the s
 4. Create a roots class subclassing `BaseRoots`.
 5. Implement a segmenter subclassing `BaseSegmenter` with language-specific phonological rules.
 6. Create a tokenizer class that wires the segmenter to `MorphAwareBPE`.
+
+## Contributing
+
+Contributions are welcome. Areas where help is most needed:
+
+- **Cebuano / Bisaya support** — the affix tables already have Bisaya entries; the segmenter and phonology modules are missing.
+- **Ilokano, Hiligaynon, Kapampangan** — affix data and root dictionaries.
+- **Segmenter accuracy** — the gold-standard test set in `demo/tokenizer_comparisons.ipynb` is a good starting point for finding and fixing segmentation errors.
+- **Documentation** — tutorials, worked examples, and comparisons against newer tokenizers.
+
+Please open an issue or pull request on [GitHub](https://github.com/JpCurada/filipino-tokenizer). For questions, feel free to reach out via GitHub Issues.
+
+## Links
+
+- [PyPI](https://pypi.org/project/filipino-tokenizer/)
+- [GitHub](https://github.com/JpCurada/filipino-tokenizer)
+- [Kaggle experiment](https://www.kaggle.com/code/jeypiic/filipino-tokenizer-experiment)
+- [Issues & bug reports](https://github.com/JpCurada/filipino-tokenizer/issues)
 
 ## References
 

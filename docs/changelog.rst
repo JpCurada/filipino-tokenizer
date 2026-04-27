@@ -1,6 +1,29 @@
 Changelog
 =========
 
+0.4.1 (2026-04-27)
+-------------------
+
+Fixed
+~~~~~
+
+- **HuggingFace wrapper — ``_convert_token_to_id`` never returns ``None``** —
+  After ``super().__init__()``, HuggingFace wraps special tokens in ``AddedToken``
+  objects.  Passing an ``AddedToken`` as a plain ``dict`` key failed the vocab lookup
+  in some HF versions, allowing ``None`` to propagate into padded ``input_ids`` and
+  crashing batch tokenisation with:
+
+  ``ValueError: type of None unknown: <class 'NoneType'>``
+
+  Fixed by using ``str(self.unk_token)`` before the vocab lookup and adding a final
+  ``isinstance(result, int)`` guard so the function always returns a valid integer.
+
+- **Broader import-error handling for ``transformers``** — The ``except ImportError``
+  around the ``transformers`` import was too narrow; partial installs can raise
+  ``AttributeError`` or other exceptions, silently stripping ``batch_encode_plus`` and
+  other HF methods.  Changed to ``except Exception`` with a proper stub-class fallback
+  so the MRO is never crippled.
+
 0.4.0 (2026-04-27)
 -------------------
 

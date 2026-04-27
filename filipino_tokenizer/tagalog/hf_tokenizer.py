@@ -31,9 +31,16 @@ import os
 try:
     from transformers import PreTrainedTokenizer
     _TRANSFORMERS_AVAILABLE = True
-except ImportError:
+except Exception:
+    # Catches ImportError, ModuleNotFoundError, and any error from a partial
+    # transformers install (AttributeError, etc.), so the class definition
+    # always succeeds without silently crippling the MRO.
     _TRANSFORMERS_AVAILABLE = False
-    PreTrainedTokenizer = object  # fallback so the class definition succeeds
+
+    class PreTrainedTokenizer:  # type: ignore[no-redef]
+        """Placeholder so the class body can be parsed without transformers."""
+        def __init__(self, *args, **kwargs):
+            pass
 
 from filipino_tokenizer.tagalog.tokenizer import TagalogTokenizer
 
@@ -127,10 +134,18 @@ class TagalogHFTokenizer(PreTrainedTokenizer):
         return self._inner.tokenize(text)
 
     def _convert_token_to_id(self, token: str) -> int:
-        unk_id = self._inner.bpe.vocab.get(self.unk_token, 1)
+        vocab = self._inner.bpe.vocab
+        # self.unk_token is an AddedToken after super().__init__(); str() extracts
+        # the content string so the plain-dict lookup works in all HF versions.
+        unk_str = str(self.unk_token) if self.unk_token is not None else "<unk>"
+        unk_id = vocab.get(unk_str, 1)
+        if not isinstance(unk_id, int):
+            unk_id = 1
         if token is None:
             return unk_id
-        return self._inner.bpe.vocab.get(str(token), unk_id)
+        result = vocab.get(str(token), unk_id)
+        # Guard: vocab values must be int; None would crash HF padding logic.
+        return result if isinstance(result, int) else unk_id
 
     def _convert_id_to_token(self, index: int) -> str:
         return self._inner.bpe.id_to_token.get(index, self.unk_token)
